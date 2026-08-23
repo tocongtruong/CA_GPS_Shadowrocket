@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iOS Location Monitor & Database Manager (30 Days)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOP NAVBAR -->
+    <header class="header">
+      <div class="brand">
+        <div class="radar-pulse"></div>
+        <div class="brand-text">
+          <h1>iOS Location Lab</h1>
+          <span class="badge-tag">SQLite 30-Day Retention</span>
+        </div>
+      </div>
+
+      <!-- TAB SWITCHER -->
+      <nav class="nav-tabs">
+        <button id="tabBtnMap" class="tab-btn active">🗺️ Bản Đồ & Lộ Trình</button>
+        <button id="tabBtnDb" class="tab-btn">🗄️ Quản Lý Database</button>
+      </nav>
+
+      <div class="controls-bar">
+        <div class="control-group">
+          <label for="deviceSelect">Thiết bị:</label>
+          <select id="deviceSelect" class="form-select">
+            <option value="iphone_01">iphone_01</option>
+          </select>
+        </div>
+
+        <div class="control-group date-control">
+          <label for="datePicker">Ngày:</label>
+          <input type="date" id="datePicker" class="form-input">
+        </div>
+
+        <button id="btnRefresh" class="btn btn-primary">
+          <span class="icon">🔄</span> Làm mới
+        </button>
+
+        <div class="live-indicator" id="liveStatus">
+          <span class="dot"></span> Live
+        </div>
+      </div>
+    </header>
+
+    <!-- TAB 1: BẢN ĐỒ & LỘ TRÌNH -->
+    <main id="viewMap" class="main-layout tab-content active">
+      <!-- SIDEBAR STATS & TIMELINE -->
+      <aside class="sidebar">
+        <!-- VỊ TRÍ MỚI NHẤT -->
+        <section class="card current-card">
+          <div class="card-header">
+            <h3>📍 Vị Trí Hiện Tại / Mới Nhất</h3>
+            <span id="lastUpdated" class="text-muted">Đang tải...</span>
+          </div>
+          <div class="coords-display">
+            <div class="coord-item">
+              <span class="coord-label">Vĩ độ (Lat)</span>
+              <span id="curLat" class="coord-value">--.------</span>
+            </div>
+            <div class="coord-item">
+              <span class="coord-label">Kinh độ (Lng)</span>
+              <span id="curLng" class="coord-value">--.------</span>
+            </div>
+          </div>
+          <div class="card-meta">
+            <div class="meta-item">
+              <span>Độ chính xác:</span>
+              <strong id="curAccuracy">~-- m</strong>
+            </div>
+            <div class="meta-item">
+              <span>Nguồn:</span>
+              <div id="curSource">--</div>
+            </div>
+          </div>
+          <a id="btnGmaps" href="#" target="_blank" class="btn btn-outline btn-block">
+            Mở trên Google Maps ↗
+          </a>
+        </section>
+
+        <!-- LỘ TRÌNH & ĐIỂM DỪNG -->
+        <section class="card route-card">
+          <div class="card-header">
+            <h3>🗺️ Thống Kê Lịch Trình (<span id="routeDateLabel">Hôm nay</span>)</h3>
+          </div>
+          <div class="route-stats-grid">
+            <div class="stat-box">
+              <span class="stat-num" id="statDistance">0.0 km</span>
+              <span class="stat-lbl">Quãng đường</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-num" id="statPoints">0</span>
+              <span class="stat-lbl">Điểm ghi nhận</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-num" id="statStops">0</span>
+              <span class="stat-lbl">Điểm dừng</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-num" id="statDuration">--:--</span>
+              <span class="stat-lbl">Thời gian</span>
+            </div>
+          </div>
+
+          <!-- BỘ ĐIỀU KHIỂN TUA LỘ TRÌNH -->
+          <div class="playback-panel">
+            <div class="playback-header">
+              <span>Tua lại hành trình trong ngày:</span>
+              <span id="playbackTimeDisplay" class="time-badge">00:00:00</span>
+            </div>
+            <input type="range" id="timelineSlider" min="0" max="100" value="0" class="timeline-range" disabled>
+            <div class="playback-btns">
+              <button id="btnPlay" class="btn btn-sm btn-action" disabled>▶ Phát</button>
+              <select id="playSpeed" class="form-select select-sm">
+                <option value="1">1x</option>
+                <option value="3" selected>3x</option>
+                <option value="8">8x</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- THÔNG TIN HỆ THỐNG & RETENTION -->
+        <section class="card system-card">
+          <div class="card-header">
+            <h3>📊 Trạng Thái Hệ Thống</h3>
+          </div>
+          <ul class="system-list">
+            <li><span>Lưu trữ dữ liệu:</span> <strong>30 ngày gần nhất</strong></li>
+            <li><span>Tổng bản ghi DB:</span> <strong id="sysTotalRecords">--</strong></li>
+            <li><span>Dung lượng SQLite:</span> <strong id="sysDbSize">-- MB</strong></li>
+            <li><span>Bản ghi cũ nhất:</span> <strong id="sysOldest">--</strong></li>
+          </ul>
+        </section>
+      </aside>
+
+      <!-- MAP CONTAINER -->
+      <section class="map-wrapper">
+        <div id="map"></div>
+        <div class="map-overlay-layer">
+          <button id="btnCenterCurrent" class="map-floating-btn" title="Quay về vị trí hiện tại">🎯 Vị trí hiện tại</button>
+          <button id="btnFitRoute" class="map-floating-btn" title="Bao quát toàn bộ lộ trình">📐 Xem trọn lộ trình</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- TAB 2: QUẢN LÝ DATABASE CRUD -->
+    <main id="viewDb" class="database-layout tab-content">
+      <div class="db-container">
+        <div class="db-header-bar">
+          <div class="db-header-left">
+            <h2>🗄️ Quản Trị Cơ Sở Dữ Liệu SQLite (Locations)</h2>
+            <span class="db-sub-text">Quản lý, tìm kiếm, chỉnh sửa và thêm mới các bản ghi tọa độ</span>
+          </div>
+          <div class="db-header-actions">
+            <button id="btnAddLocation" class="btn btn-success">➕ Thêm Vị Trí Mới</button>
+            <button id="btnClearDb" class="btn btn-danger">🧹 Xóa Hết Dữ Liệu Rác</button>
+          </div>
+        </div>
+
+        <div class="db-filter-bar">
+          <div class="db-filter-group">
+            <label>Lọc thiết bị:</label>
+            <select id="dbFilterDevice" class="form-select">
+              <option value="all">Tất cả thiết bị</option>
+            </select>
+          </div>
+          <div class="db-count-text">
+            Hiển thị <span id="dbShowingCount">0</span> / Tổng cộng <strong id="dbTotalCount">0</strong> bản ghi
+          </div>
+        </div>
+
+        <div class="db-table-wrapper">
+          <table class="db-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Thiết Bị</th>
+                <th>Vĩ Độ (Lat)</th>
+                <th>Kinh Độ (Lng)</th>
+                <th>Độ Chính Xác</th>
+                <th>Nguồn (Source)</th>
+                <th>Thời Gian Ghi Nhận (VN)</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="dbTableBody">
+              <tr>
+                <td colspan="8" class="text-center">Đang tải dữ liệu...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="db-pagination-bar">
+          <button id="btnPrevPage" class="btn btn-outline" disabled>⬅ Trang Trước</button>
+          <span id="pageIndicator" class="page-indicator">Trang 1 / 1</span>
+          <button id="btnNextPage" class="btn btn-outline" disabled>Trang Sau ➡</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL THÊM / SỬA BẢN GHI -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalTitle">➕ Thêm Vị Trí Mới</h3>
+        <button id="modalCloseBtn" class="modal-close-btn">&times;</button>
+      </div>
+      <form id="locationForm" class="modal-form">
+        <input type="hidden" id="formId">
+        <div class="form-group">
+          <label for="formDeviceId">Mã thiết bị (Device ID):</label>
+          <input type="text" id="formDeviceId" class="form-input" required placeholder="iphone_01">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formLat">Vĩ độ (Latitude):</label>
+            <input type="number" step="any" id="formLat" class="form-input" required placeholder="21.028511">
+          </div>
+          <div class="form-group">
+            <label for="formLng">Kinh độ (Longitude):</label>
+            <input type="number" step="any" id="formLng" class="form-input" required placeholder="105.854211">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formAccuracy">Độ chính xác (mét):</label>
+            <input type="number" id="formAccuracy" class="form-input" value="10" placeholder="10">
+          </div>
+          <div class="form-group">
+            <label for="formSource">Nguồn (Source):</label>
+            <select id="formSource" class="form-select">
+              <option value="shortcut_gps">🎯 GPS Chuẩn (Shortcut / App)</option>
+              <option value="apple_wloc_resolved">📡 Apple WLOC (Wi-Fi/Cell)</option>
+              <option value="manual_admin">✏️ Nhập Thủ Công Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="modalCancelBtn" class="btn btn-outline">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu Bản Ghi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

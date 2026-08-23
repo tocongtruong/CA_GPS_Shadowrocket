@@ -1,0 +1,17 @@
+{
+  "name": "ios-location-server",
+  "version": "1.0.0",
+  "description": "Backend server for receiving, storing (30-day retention), Telegram notifications and visualizing iOS location events from Shadowrocket MITM",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "telegraf": "^4.16.3"
+  }
+}
