@@ -35,7 +35,6 @@
   var url = req.url || "";
   var host = headers["Host"] || headers["host"] || "gs-loc.apple.com";
 
-  // Hàm chuyển đổi an toàn các định dạng body sang Uint8Array
   function bodyToBytes(body) {
     if (body == null) return null;
     if (body instanceof Uint8Array) return body;
@@ -63,7 +62,6 @@
     );
   }
 
-  // Pure JS Base64 encoder (Chạy tốt 100% trên JSC của iOS)
   function base64Encode(bytes) {
     if (!bytes || bytes.length === 0) return "";
     var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -102,7 +100,6 @@
     console.log("[LocationWatcher] " + payload.event_type + " from " + host + ", bytes=" + payload.body_length);
   }
 
-  // Gửi Webhook bất đồng bộ về server
   $httpClient.post(
     {
       url: CONFIG.server,
