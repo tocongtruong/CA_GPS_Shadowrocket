@@ -1,0 +1,12 @@
+#!name=iOS Location Watcher
+#!desc=Module bắt request định vị /clls/wloc và ghi nhận lịch sử về Server riêng qua Webhook.
+#!author=Custom Location Lab
+#!system=ios
+
+[Script]
+LocationRequestWatcher = type=http-request,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc,requires-body=1,binary-body-mode=1,max-size=0,timeout=10,script-path=https://raw.githubusercontent.com/tocongtruong/CA_GPS_Shadowrocket/main/watcher.js,argument=server=http://YOUR_SERVER_IP:3000/api/location-event&token=my_secret_token_123&deviceId=iphone_01&debug=false
+
+LocationResponseWatcher = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc,requires-body=1,binary-body-mode=1,max-size=0,timeout=10,script-path=https://raw.githubusercontent.com/tocongtruong/CA_GPS_Shadowrocket/main/watcher.js,argument=server=http://YOUR_SERVER_IP:3000/api/location-event&token=my_secret_token_123&deviceId=iphone_01&debug=false
+
+[MITM]
+hostname = %APPEND% gs-loc.apple.com, gs-loc-cn.apple.com, gsp-ssl.ls.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com

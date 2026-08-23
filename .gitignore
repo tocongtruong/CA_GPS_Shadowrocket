@@ -1,0 +1,24 @@
+# Secrets & Keys (Không đưa lên GitHub công khai)
+*.key
+*.p12
+certs/*.key
+certs/*.p12
+.env
+server/.env
+
+# Dependencies & Build
+node_modules/
+server/node_modules/
+
+# Database files
+*.db
+*.db-wal
+*.db-shm
+server/data/
+data/
+
+# OS / Editor logs
+.DS_Store
+Thumbs.db
+npm-debug.log*
+*.log
