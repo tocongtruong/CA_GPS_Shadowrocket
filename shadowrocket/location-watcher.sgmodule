@@ -1,14 +1,15 @@
-#!name=KHÔNG CÀI - Location Watcher Template
-#!desc=BẢN MẪU KHÔNG HOẠT ĐỘNG vì không có token. Hãy tải module PRIVATE v3.1 sau khi đăng nhập dashboard.
+#!name=iOS Location Watcher PRIVATE v3.1
+#!desc=Module riêng tư đã nhúng token collector. Không chia sẻ file này.
 #!author=Custom Location Lab
 #!system=ios
+#!private=true
 
 [Script]
-ModuleConnectivityProbe = type=http-request,pattern=^https?:\/\/ca\.gettoken\.io\.vn\/api\/module-probe(?:\?.*)?$,requires-body=0,max-size=0,timeout=10,script-path=https://ca.gettoken.io.vn/download/watcher.js?v=3.1.0,argument=server=https://ca.gettoken.io.vn/api/location-event&token=REPLACE_WITH_PRIVATE_TOKEN&deviceId=iphone_01&eventType=module_probe&debug=true
+ModuleConnectivityProbe = type=http-request,pattern=^https?:\/\/ca\.gettoken\.io\.vn\/api\/module-probe(?:\?.*)?$,requires-body=0,max-size=0,timeout=10,script-path=https://ca.gettoken.io.vn/download/watcher.js?v=3.1.0,argument=server=https://ca.gettoken.io.vn/api/location-event&token=4a0793daf874aa87296f13466498832ed77684c9e60a362854c93b6afd263220&deviceId=iphone_01&eventType=module_probe&debug=true
 
-LocationRequestWatcher = type=http-request,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=https://ca.gettoken.io.vn/download/watcher.js?v=3.1.0,argument=server=https://ca.gettoken.io.vn/api/location-event&token=REPLACE_WITH_PRIVATE_TOKEN&deviceId=iphone_01&debug=true
+LocationRequestWatcher = type=http-request,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=https://ca.gettoken.io.vn/download/watcher.js?v=3.1.0,argument=server=https://ca.gettoken.io.vn/api/location-event&token=4a0793daf874aa87296f13466498832ed77684c9e60a362854c93b6afd263220&deviceId=iphone_01&debug=true
 
-LocationResponseWatcher = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=30,script-path=https://ca.gettoken.io.vn/download/watcher.js?v=3.1.0,argument=server=https://ca.gettoken.io.vn/api/location-event&token=REPLACE_WITH_PRIVATE_TOKEN&deviceId=iphone_01&debug=true
+LocationResponseWatcher = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=30,script-path=https://ca.gettoken.io.vn/download/watcher.js?v=3.1.0,argument=server=https://ca.gettoken.io.vn/api/location-event&token=4a0793daf874aa87296f13466498832ed77684c9e60a362854c93b6afd263220&deviceId=iphone_01&debug=true
 
 [MITM]
 hostname = %APPEND% ca.gettoken.io.vn, gs-loc.apple.com, gs-loc-cn.apple.com, gsp-ssl.ls.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com
