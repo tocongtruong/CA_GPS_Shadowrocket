@@ -124,6 +124,7 @@ function checkpointWAL() {
 
 module.exports = {
   db,
+  dbPath,
   initDatabase,
   purgeOldData,
   checkpointWAL

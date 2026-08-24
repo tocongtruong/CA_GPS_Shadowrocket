@@ -1,17 +1,22 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
 const { initDatabase, purgeOldData, checkpointWAL } = require('./database');
 const { startRetentionCleaner } = require('./services/cleanerService');
 const locationService = require('./services/locationService');
 const { initTelegramBot } = require('./services/telegramService');
+const { createDashboardAuth, createWebhookAuth } = require('./services/authService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET_TOKEN = process.env.SECRET_TOKEN || '';
+const DASHBOARD_USER = process.env.DASHBOARD_USER || 'admin';
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
+const dashboardAuth = createDashboardAuth({ username: DASHBOARD_USER, password: DASHBOARD_PASSWORD });
+const verifyWebhookAuth = createWebhookAuth(SECRET_TOKEN);
+
+app.set('trust proxy', true);
 
 // 1. Khởi tạo Database SQLite WAL
 initDatabase();
@@ -23,57 +28,29 @@ startRetentionCleaner();
 initTelegramBot();
 
 // 4. Middleware
-app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-/**
- * Middleware xác thực Webhook
- */
-function verifyWebhookAuth(req, res, next) {
-  if (!SECRET_TOKEN) return next();
+app.get('/api/health', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, status: 'ok', server_time: Date.now() });
+});
 
-  const signature = req.headers['x-signature'];
-  const deviceId = req.headers['x-device-id'] || req.body.device_id;
-  const timestamp = req.headers['x-timestamp'];
-  const nonce = req.headers['x-nonce'];
-
-  if (signature && timestamp && nonce) {
-    const now = Date.now();
-    const reqTime = parseInt(timestamp, 10);
-    if (Math.abs(now - reqTime) > 300000) {
-      return res.status(401).json({ success: false, error: 'Timestamp expired (Replay attack protection).' });
-    }
-
-    const payloadString = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    const expectedSig = crypto
-      .createHmac('sha256', SECRET_TOKEN)
-      .update(`${deviceId}:${timestamp}:${nonce}:${payloadString}`)
-      .digest('hex');
-
-    if (crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
-      return next();
-    }
-  }
-
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : req.query.token;
-
-  if (token && token === SECRET_TOKEN) {
-    return next();
-  }
-
-  return res.status(401).json({
-    success: false,
-    error: 'Unauthorized: Sai hoặc thiếu Secret Token / Chữ ký HMAC.'
+app.get('/api/module-probe', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({
+    success: true,
+    status: 'probe-page-reached',
+    message: 'Nếu module Shadowrocket v3.1 đang bật, dashboard sẽ xuất hiện thiết bị với nguồn module_probe.',
+    server_time: Date.now()
   });
-}
+});
 
 // -------------------------------------------------------------
 // 1. CỔNG TẢI TRỰC TIẾP CERT & MODULE CHO IPHONE & SHADOWROCKET
 // -------------------------------------------------------------
 const certsDir = path.join(__dirname, '..', 'certs');
-const shadowDir = path.join(__dirname, '..', 'shadowrocket');
+const projectRoot = path.join(__dirname, '..');
 
 app.get('/download/ca.crt', (req, res) => {
   const file = path.join(certsDir, 'ca.crt');
@@ -85,7 +62,7 @@ app.get('/download/ca.crt', (req, res) => {
   res.status(404).send('Chưa sinh file ca.crt. Vui lòng chạy node generate-cert.js');
 });
 
-app.get('/download/ca.p12', (req, res) => {
+app.get('/download/ca.p12', dashboardAuth, (req, res) => {
   const file = path.join(certsDir, 'ca.p12');
   if (fs.existsSync(file)) {
     res.setHeader('Content-Type', 'application/x-pkcs12');
@@ -96,35 +73,45 @@ app.get('/download/ca.p12', (req, res) => {
 });
 
 app.get('/download/watcher.js', (req, res) => {
-  const file = path.join(shadowDir, 'watcher.js');
+  const file = path.join(projectRoot, 'watcher.js');
   if (fs.existsSync(file)) {
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300');
     return res.sendFile(file);
   }
   res.status(404).send('Không tìm thấy file watcher.js');
 });
 
-app.get('/download/location-watcher.sgmodule', (req, res) => {
+app.get('/download/location-watcher.sgmodule', dashboardAuth, (req, res) => {
   const host = req.headers.host || `localhost:${PORT}`;
-  const protocol = req.protocol || 'http';
+  const protocol = req.protocol;
   const serverUrl = `${protocol}://${host}/api/location-event`;
-  const scriptUrl = `${protocol}://${host}/download/watcher.js`;
+  const scriptUrl = `${protocol}://${host}/download/watcher.js?v=3.1.0`;
+  const collectorToken = encodeURIComponent(SECRET_TOKEN);
+  const requestedHostname = String(req.hostname || host.split(':')[0]).toLowerCase();
+  const moduleHostname = /^[a-z0-9.-]+$/.test(requestedHostname) ? requestedHostname : 'localhost';
+  const moduleHost = moduleHostname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  const sgmoduleContent = `#!name=iOS Location Watcher
-#!desc=Module bắt request định vị /clls/wloc và ghi nhận lịch sử về Server riêng qua Webhook.
+  const sgmoduleContent = `#!name=iOS Location Watcher PRIVATE v3.1
+#!desc=Module riêng tư đã nhúng token collector. Không chia sẻ file này.
 #!author=Custom Location Lab
 #!system=ios
+#!private=true
 
 [Script]
-LocationRequestWatcher = type=http-request,pattern=^https?:\\/\\/(?:gs-loc(?:-cn)?\\.apple\\.com|gsp-ssl\\.ls\\.apple\\.com|bluedot\\.is\\.autonavi\\.com(?:\\.gds\\.alibabadns\\.com)?)\\/clls\\/wloc,requires-body=1,binary-body-mode=1,max-size=0,timeout=10,script-path=${scriptUrl},argument=server=${serverUrl}&token=${SECRET_TOKEN}&deviceId=iphone_01&debug=false
+ModuleConnectivityProbe = type=http-request,pattern=^https?:\\/\\/${moduleHost}\\/api\\/module-probe(?:\\?.*)?$,requires-body=0,max-size=0,timeout=10,script-path=${scriptUrl},argument=server=${serverUrl}&token=${collectorToken}&deviceId=iphone_01&eventType=module_probe&debug=true
 
-LocationResponseWatcher = type=http-response,pattern=^https?:\\/\\/(?:gs-loc(?:-cn)?\\.apple\\.com|gsp-ssl\\.ls\\.apple\\.com|bluedot\\.is\\.autonavi\\.com(?:\\.gds\\.alibabadns\\.com)?)\\/clls\\/wloc,requires-body=1,binary-body-mode=1,max-size=0,timeout=10,script-path=${scriptUrl},argument=server=${serverUrl}&token=${SECRET_TOKEN}&deviceId=iphone_01&debug=false
+LocationRequestWatcher = type=http-request,pattern=^https?:\\/\\/(?:gs-loc(?:-cn)?\\.apple\\.com|gsp-ssl\\.ls\\.apple\\.com|bluedot\\.is\\.autonavi\\.com(?:\\.gds\\.alibabadns\\.com)?)\\/clls\\/wloc(?:\\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=${scriptUrl},argument=server=${serverUrl}&token=${collectorToken}&deviceId=iphone_01&debug=true
+
+LocationResponseWatcher = type=http-response,pattern=^https?:\\/\\/(?:gs-loc(?:-cn)?\\.apple\\.com|gsp-ssl\\.ls\\.apple\\.com|bluedot\\.is\\.autonavi\\.com(?:\\.gds\\.alibabadns\\.com)?)\\/clls\\/wloc(?:\\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=30,script-path=${scriptUrl},argument=server=${serverUrl}&token=${collectorToken}&deviceId=iphone_01&debug=true
 
 [MITM]
-hostname = %APPEND% gs-loc.apple.com, gs-loc-cn.apple.com, gsp-ssl.ls.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com
+hostname = %APPEND% ${moduleHostname}, gs-loc.apple.com, gs-loc-cn.apple.com, gsp-ssl.ls.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com
 `;
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="location-watcher.sgmodule"');
+  res.setHeader('Cache-Control', 'no-store');
   res.send(sgmoduleContent);
 });
 
@@ -143,7 +130,10 @@ app.post('/api/location-event', verifyWebhookAuth, (req, res) => {
       target_host = 'apple-location',
       body_base64 = '',
       body_length = 0,
-      source
+      source,
+      content_encoding = '',
+      content_type = '',
+      diagnostics = null
     } = req.body;
 
     const result = locationService.recordLocationEvent({
@@ -155,11 +145,20 @@ app.post('/api/location-event', verifyWebhookAuth, (req, res) => {
       raw_payload: {
         target_host,
         body_length,
-        has_binary_body: !!body_base64
+        has_binary_body: !!body_base64,
+        content_encoding,
+        content_type,
+        diagnostics
       },
       body_base64,
+      content_encoding,
       event_time: typeof timestamp === 'number' ? timestamp : Date.now()
     });
+
+    console.log(
+      `[Collector] device=${deviceId} event=${event_type} body=${Number(body_length) || 0}`
+      + ` parse=${result.data?.parse_status || (result.is_duplicate ? 'duplicate' : 'unknown')}`
+    );
 
     if (result.is_duplicate) {
       return res.status(200).json({
@@ -173,6 +172,7 @@ app.post('/api/location-event', verifyWebhookAuth, (req, res) => {
       success: true,
       id: result.id,
       device_id: deviceId,
+      parse_status: result.data?.parse_status || null,
       received_at: new Date().toISOString()
     });
   } catch (error) {
@@ -195,18 +195,24 @@ app.post('/api/manual-ping', verifyWebhookAuth, (req, res) => {
       timestamp = Date.now()
     } = req.body;
 
-    if (latitude === undefined || longitude === undefined) {
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+    const parsedAccuracy = Number(accuracy);
+
+    if (!Number.isFinite(parsedLatitude) || !Number.isFinite(parsedLongitude)
+      || parsedLatitude < -90 || parsedLatitude > 90
+      || parsedLongitude < -180 || parsedLongitude > 180) {
       return res.status(400).json({
         success: false,
-        error: 'Vui lòng cung cấp đầy đủ latitude và longitude.'
+        error: 'Latitude hoặc longitude không hợp lệ.'
       });
     }
 
     const result = locationService.recordLocationEvent({
       device_id: deviceId,
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      accuracy: parseFloat(accuracy) || 10,
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
+      accuracy: Number.isFinite(parsedAccuracy) && parsedAccuracy > 0 ? parsedAccuracy : 10,
       source,
       raw_payload: null,
       event_time: timestamp
@@ -226,6 +232,8 @@ app.post('/api/manual-ping', verifyWebhookAuth, (req, res) => {
 // -------------------------------------------------------------
 // 4. API TRUY VẤN VỊ TRÍ & LỘ TRÌNH
 // -------------------------------------------------------------
+app.use(dashboardAuth);
+
 app.get('/api/location/latest', (req, res) => {
   try {
     const deviceId = req.query.device_id;
@@ -243,7 +251,7 @@ app.get('/api/location/latest', (req, res) => {
 app.get('/api/location/history', (req, res) => {
   try {
     const deviceId = req.query.device_id;
-    const limit = parseInt(req.query.limit, 10) || 100;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 1000);
     if (!deviceId) {
       return res.status(400).json({ success: false, error: 'Vui lòng cung cấp tham số device_id' });
     }
@@ -292,8 +300,8 @@ app.get('/api/stats', (req, res) => {
 // Lấy danh sách phân trang bản ghi
 app.get('/api/admin/locations', (req, res) => {
   try {
-    const limit = parseInt(req.query.limit, 10) || 50;
-    const offset = parseInt(req.query.offset, 10) || 0;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
     const deviceId = req.query.device_id || null;
 
     const data = locationService.getAllLocationsAdmin(limit, offset, deviceId);
@@ -307,14 +315,18 @@ app.get('/api/admin/locations', (req, res) => {
 app.post('/api/admin/locations', (req, res) => {
   try {
     const { device_id, latitude, longitude, accuracy, source, event_time } = req.body;
-    if (!device_id || latitude === undefined || longitude === undefined) {
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+    if (!device_id || !Number.isFinite(parsedLatitude) || !Number.isFinite(parsedLongitude)
+      || parsedLatitude < -90 || parsedLatitude > 90
+      || parsedLongitude < -180 || parsedLongitude > 180) {
       return res.status(400).json({ success: false, error: 'Vui lòng nhập device_id, latitude và longitude' });
     }
 
     const id = locationService.addManualLocation({
       device_id,
-      latitude,
-      longitude,
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
       accuracy: accuracy || 10,
       source: source || 'manual_admin',
       event_time: event_time ? new Date(event_time).getTime() : Date.now()
@@ -372,11 +384,19 @@ app.get('*', (req, res) => {
 });
 
 // Khởi động lắng nghe Server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('====================================================');
   console.log(`🚀 iOS Location Server đang chạy tại: http://localhost:${PORT}`);
-  console.log(`📥 Tải Cert cho iPhone: http://localhost:${PORT}/download/ca.crt`);
-  console.log(`📦 Tải Module Shadowrocket: http://localhost:${PORT}/download/location-watcher.sgmodule`);
-  console.log(`🗺️  Xem Dashboard & Lộ Trình: http://localhost:${PORT}`);
+  console.log(`📥 Tải Cert công khai: http://localhost:${PORT}/download/ca.crt`);
+  console.log(`🔐 Dashboard và module riêng tư yêu cầu tài khoản: ${DASHBOARD_USER}`);
   console.log('====================================================');
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`[Server] Cổng ${PORT} đang được sử dụng. Hãy dừng tiến trình cũ hoặc đổi PORT.`);
+    process.exitCode = 1;
+    return;
+  }
+  throw error;
 });

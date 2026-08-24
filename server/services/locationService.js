@@ -1,14 +1,14 @@
-const { db } = require('../database');
+const { db, dbPath } = require('../database');
 const crypto = require('crypto');
 const fs = require('fs');
 const EventEmitter = require('events');
-const { parseWlocPayload } = require('./wlocParser');
+const { parseWlocPayloadDetailed } = require('./wlocParser');
 
 class LocationEventEmitter extends EventEmitter {}
 const locationEvents = new LocationEventEmitter();
 
 function calculateDistanceKm(lat1, lon1, lat2, lon2) {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+  if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return 0;
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -31,32 +31,57 @@ function recordLocationEvent({
   source = 'apple_wloc',
   raw_payload = null,
   body_base64 = null,
+  content_encoding = '',
   event_time = Date.now()
 }) {
   const now = Date.now();
-  const time = event_time || now;
+  const parsedTime = Number(event_time);
+  const time = Number.isFinite(parsedTime) && parsedTime > 0 ? parsedTime : now;
 
   let finalLat = latitude !== null && latitude !== undefined ? parseFloat(latitude) : null;
   let finalLng = longitude !== null && longitude !== undefined ? parseFloat(longitude) : null;
   let finalAcc = accuracy ? parseFloat(accuracy) : 0;
   let finalSource = source;
+  let parserDiagnostics = null;
+
+  if (!Number.isFinite(finalLat) || finalLat < -90 || finalLat > 90) finalLat = null;
+  if (!Number.isFinite(finalLng) || finalLng < -180 || finalLng > 180) finalLng = null;
+  if (!Number.isFinite(finalAcc) || finalAcc < 0) finalAcc = 0;
 
   // 1. Nếu có body Base64 từ Apple response, tiến hành giải mã Protobuf
-  if ((finalLat === null || finalLng === null) && body_base64) {
-    const parsed = parseWlocPayload(body_base64);
-    if (parsed) {
-      finalLat = parsed.latitude;
-      finalLng = parsed.longitude;
-      finalAcc = parsed.accuracy;
+  const isResponsePayload = String(source).includes('response') || source === 'apple_wloc';
+  if ((finalLat === null || finalLng === null) && body_base64 && isResponsePayload) {
+    parserDiagnostics = parseWlocPayloadDetailed(body_base64, { contentEncoding: content_encoding });
+    if (parserDiagnostics.location) {
+      finalLat = parserDiagnostics.location.latitude;
+      finalLng = parserDiagnostics.location.longitude;
+      finalAcc = parserDiagnostics.location.accuracy;
       finalSource = 'apple_wloc_resolved';
     }
   }
 
   // 2. Tính toán SHA-256 Hash phục vụ Deduplication
-  const hashInput = body_base64 
-    ? `${device_id}:${body_base64.substring(0, 128)}`
-    : `${device_id}:${finalLat}:${finalLng}:${finalSource}`;
-  const payloadHash = crypto.createHash('sha256').update(hashInput).digest('hex');
+  const hash = crypto.createHash('sha256').update(`${device_id}:`);
+  if (body_base64) hash.update(body_base64);
+  else hash.update(`${finalLat}:${finalLng}:${finalSource}`);
+  const payloadHash = hash.digest('hex');
+
+  const storedPayload = body_base64
+    ? JSON.stringify({
+        metadata: raw_payload,
+        content_encoding,
+        parser: parserDiagnostics
+          ? {
+              error: parserDiagnostics.error,
+              envelope_kind: parserDiagnostics.envelope_kind,
+              candidate_count: parserDiagnostics.candidate_count,
+              encoded_body_length: parserDiagnostics.encoded_body_length,
+              decoded_body_length: parserDiagnostics.decoded_body_length
+            }
+          : null,
+        body_base64
+      })
+    : (typeof raw_payload === 'object' ? JSON.stringify(raw_payload) : raw_payload);
 
   // 3. Kiểm tra trùng lặp (Deduplication trong vòng 60 giây)
   const duplicateCheck = db.prepare(`
@@ -94,7 +119,7 @@ function recordLocationEvent({
       finalAcc,
       finalSource,
       payloadHash,
-      body_base64 || (typeof raw_payload === 'object' ? JSON.stringify(raw_payload) : raw_payload),
+      storedPayload,
       time,
       now
     );
@@ -124,7 +149,10 @@ function recordLocationEvent({
     longitude: finalLng,
     accuracy: finalAcc,
     source: finalSource,
-    event_time: time
+    event_time: time,
+    parse_status: parserDiagnostics
+      ? (parserDiagnostics.location ? 'resolved' : parserDiagnostics.error)
+      : (body_base64 ? 'not_applicable' : 'missing_body')
   };
 
   locationEvents.emit('location_recorded', eventPayload);
@@ -136,24 +164,27 @@ function recordLocationEvent({
  * Lấy vị trí mới nhất có tọa độ hợp lệ của thiết bị
  */
 function getLatestLocation(deviceId) {
-  // Ưu tiên bản ghi có tọa độ thực
-  const stmtWithCoords = db.prepare(`
-    SELECT * FROM locations 
-    WHERE device_id = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
-    ORDER BY event_time DESC 
+  const selectedColumns = 'id, device_id, latitude, longitude, accuracy, source, event_time, created_at';
+  const latestSignal = db.prepare(`
+    SELECT ${selectedColumns} FROM locations
+    WHERE device_id = ?
+    ORDER BY event_time DESC
     LIMIT 1
-  `);
-  const withCoords = stmtWithCoords.get(deviceId);
-  if (withCoords) return withCoords;
+  `).get(deviceId);
 
-  // Nếu chưa có tọa độ, trả về bản ghi trigger gần nhất
-  const stmtAny = db.prepare(`
-    SELECT * FROM locations 
-    WHERE device_id = ? 
-    ORDER BY event_time DESC 
+  if (!latestSignal) return null;
+
+  const latestCoordinates = db.prepare(`
+    SELECT ${selectedColumns} FROM locations
+    WHERE device_id = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
+    ORDER BY event_time DESC
     LIMIT 1
-  `);
-  return stmtAny.get(deviceId) || null;
+  `).get(deviceId);
+
+  return {
+    ...(latestCoordinates || latestSignal),
+    latest_signal: latestSignal
+  };
 }
 
 /**
@@ -207,6 +238,11 @@ function addManualLocation({ device_id, latitude, longitude, accuracy = 10, sour
   const lng = parseFloat(longitude);
   const acc = parseFloat(accuracy) || 10;
 
+  if (!device_id || !Number.isFinite(lat) || !Number.isFinite(lng)
+    || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new Error('Dữ liệu tọa độ không hợp lệ');
+  }
+
   const payloadHash = crypto.createHash('sha256').update(`manual:${device_id}:${lat}:${lng}:${time}`).digest('hex');
 
   const stmt = db.prepare(`
@@ -237,6 +273,16 @@ function addManualLocation({ device_id, latitude, longitude, accuracy = 10, sour
  * Cập nhật một bản ghi vị trí (CRUD)
  */
 function updateLocation(id, { device_id, latitude, longitude, accuracy, source, event_time }) {
+  const parsedLatitude = latitude !== undefined ? Number(latitude) : null;
+  const parsedLongitude = longitude !== undefined ? Number(longitude) : null;
+  const parsedAccuracy = accuracy !== undefined ? Number(accuracy) : null;
+
+  if ((parsedLatitude !== null && (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90))
+    || (parsedLongitude !== null && (!Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180))
+    || (parsedAccuracy !== null && (!Number.isFinite(parsedAccuracy) || parsedAccuracy < 0))) {
+    throw new Error('Dữ liệu cập nhật không hợp lệ');
+  }
+
   const stmt = db.prepare(`
     UPDATE locations 
     SET device_id = COALESCE(?, device_id),
@@ -250,9 +296,9 @@ function updateLocation(id, { device_id, latitude, longitude, accuracy, source, 
 
   const result = stmt.run(
     device_id || null,
-    latitude !== undefined ? parseFloat(latitude) : null,
-    longitude !== undefined ? parseFloat(longitude) : null,
-    accuracy !== undefined ? parseFloat(accuracy) : null,
+    parsedLatitude,
+    parsedLongitude,
+    parsedAccuracy,
     source || null,
     event_time ? parseInt(event_time, 10) : null,
     id
@@ -285,24 +331,38 @@ function clearLocations(deviceId = null) {
   return true;
 }
 
+function getVietnamDateString(timestamp = Date.now()) {
+  return new Date(timestamp + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function getVietnamDayBounds(dateString) {
+  const normalizedDate = dateString || getVietnamDateString();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(normalizedDate);
+  if (!match) throw new Error('Định dạng ngày không hợp lệ. Vui lòng dùng YYYY-MM-DD');
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const utcCheck = new Date(Date.UTC(year, month - 1, day));
+  if (utcCheck.getUTCFullYear() !== year
+    || utcCheck.getUTCMonth() !== month - 1
+    || utcCheck.getUTCDate() !== day) {
+    throw new Error('Ngày không tồn tại');
+  }
+
+  const startOfDay = Date.UTC(year, month - 1, day) - 7 * 60 * 60 * 1000;
+  return {
+    date: normalizedDate,
+    startOfDay,
+    endOfDay: startOfDay + 24 * 60 * 60 * 1000 - 1
+  };
+}
+
 /**
- * Lấy lộ trình di chuyển trong ngày kèm bộ lọc GPS Jump & Phát hiện Điểm dừng
+ * Lấy lộ trình di chuyển trong ngày theo múi giờ Việt Nam, kèm lọc GPS jump.
  */
 function getRouteByDate(deviceId, dateString) {
-  let startOfDay, endOfDay;
-
-  if (dateString) {
-    const targetDate = new Date(dateString);
-    if (isNaN(targetDate.getTime())) {
-      throw new Error('Định dạng ngày không hợp lệ. Vui lòng dùng định dạng YYYY-MM-DD');
-    }
-    startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0, 0).getTime();
-    endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999).getTime();
-  } else {
-    const today = new Date();
-    startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0).getTime();
-    endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).getTime();
-  }
+  const { date, startOfDay, endOfDay } = getVietnamDayBounds(dateString);
 
   const rawPoints = db.prepare(`
     SELECT id, device_id, latitude, longitude, accuracy, source, event_time 
@@ -377,7 +437,7 @@ function getRouteByDate(deviceId, dateString) {
 
   return {
     device_id: deviceId,
-    date: dateString || new Date().toISOString().split('T')[0],
+    date,
     total_raw_points: rawPoints.length,
     total_valid_points: filteredPoints.length,
     total_distance_km: Number(totalDistanceKm.toFixed(2)),
@@ -412,7 +472,6 @@ function getSystemStats() {
   const oldestRecord = db.prepare('SELECT MIN(created_at) as min_time FROM locations').get().min_time;
   const latestRecord = db.prepare('SELECT MAX(created_at) as max_time FROM locations').get().max_time;
 
-  const dbPath = process.env.DB_PATH || './data/locations.db';
   let dbSizeMB = 0;
   if (fs.existsSync(dbPath)) {
     const stats = fs.statSync(dbPath);
@@ -442,5 +501,7 @@ module.exports = {
   addManualLocation,
   updateLocation,
   deleteLocation,
-  clearLocations
+  clearLocations,
+  getVietnamDateString,
+  getVietnamDayBounds
 };

@@ -1,0 +1,16 @@
+{
+  "name": "ios-location-lab-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root commands for the iOS Location Lab server",
+  "scripts": {
+    "start": "npm --prefix server start",
+    "dev": "npm --prefix server run dev",
+    "test": "npm --prefix server test",
+    "setup": "npm --prefix server install",
+    "rotate-secrets": "npm --prefix server run rotate-secrets"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

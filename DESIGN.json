@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-23T13:20:15.2489598Z",
+  "title": "Design System: iOS Location Lab",
+  "extensions": {
+    "colorMeta": {
+      "background-primary": {
+        "role": "neutral",
+        "displayName": "Quiet Navy",
+        "canonical": "oklch(0.18 0.018 255)",
+        "tonalRamp": ["oklch(0.15 0.018 255)", "oklch(0.25 0.018 255)", "oklch(0.35 0.018 255)", "oklch(0.45 0.018 255)", "oklch(0.55 0.018 255)", "oklch(0.65 0.018 255)", "oklch(0.80 0.018 255)", "oklch(0.95 0.018 255)"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Instrument Surface",
+        "canonical": "oklch(0.225 0.02 255)",
+        "tonalRamp": ["oklch(0.15 0.02 255)", "oklch(0.25 0.02 255)", "oklch(0.35 0.02 255)", "oklch(0.45 0.02 255)", "oklch(0.55 0.02 255)", "oklch(0.65 0.02 255)", "oklch(0.80 0.02 255)", "oklch(0.95 0.02 255)"]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised Instrument Surface",
+        "canonical": "oklch(0.265 0.022 255)",
+        "tonalRamp": ["oklch(0.15 0.022 255)", "oklch(0.25 0.022 255)", "oklch(0.35 0.022 255)", "oklch(0.45 0.022 255)", "oklch(0.55 0.022 255)", "oklch(0.65 0.022 255)", "oklch(0.80 0.022 255)", "oklch(0.95 0.022 255)"]
+      },
+      "surface-inset": {
+        "role": "neutral",
+        "displayName": "Inset Navy",
+        "canonical": "oklch(0.155 0.014 255)",
+        "tonalRamp": ["oklch(0.15 0.014 255)", "oklch(0.25 0.014 255)", "oklch(0.35 0.014 255)", "oklch(0.45 0.014 255)", "oklch(0.55 0.014 255)", "oklch(0.65 0.014 255)", "oklch(0.80 0.014 255)", "oklch(0.95 0.014 255)"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Measured Border",
+        "canonical": "oklch(0.38 0.025 255)",
+        "tonalRamp": ["oklch(0.15 0.025 255)", "oklch(0.25 0.025 255)", "oklch(0.35 0.025 255)", "oklch(0.45 0.025 255)", "oklch(0.55 0.025 255)", "oklch(0.65 0.025 255)", "oklch(0.80 0.025 255)", "oklch(0.95 0.025 255)"]
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Control Border",
+        "canonical": "oklch(0.5 0.04 250)",
+        "tonalRamp": ["oklch(0.15 0.04 250)", "oklch(0.25 0.04 250)", "oklch(0.35 0.04 250)", "oklch(0.45 0.04 250)", "oklch(0.55 0.04 250)", "oklch(0.65 0.04 250)", "oklch(0.80 0.04 250)", "oklch(0.95 0.04 250)"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Reading White",
+        "canonical": "oklch(0.94 0.012 245)",
+        "tonalRamp": ["oklch(0.15 0.012 245)", "oklch(0.25 0.012 245)", "oklch(0.35 0.012 245)", "oklch(0.45 0.012 245)", "oklch(0.55 0.012 245)", "oklch(0.65 0.012 245)", "oklch(0.80 0.012 245)", "oklch(0.95 0.012 245)"]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Secondary Reading",
+        "canonical": "oklch(0.75 0.025 250)",
+        "tonalRamp": ["oklch(0.15 0.025 250)", "oklch(0.25 0.025 250)", "oklch(0.35 0.025 250)", "oklch(0.45 0.025 250)", "oklch(0.55 0.025 250)", "oklch(0.65 0.025 250)", "oklch(0.80 0.025 250)", "oklch(0.95 0.025 250)"]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Reading",
+        "canonical": "oklch(0.67 0.025 250)",
+        "tonalRamp": ["oklch(0.15 0.025 250)", "oklch(0.25 0.025 250)", "oklch(0.35 0.025 250)", "oklch(0.45 0.025 250)", "oklch(0.55 0.025 250)", "oklch(0.65 0.025 250)", "oklch(0.80 0.025 250)", "oklch(0.95 0.025 250)"]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Instrument Cyan",
+        "canonical": "oklch(0.74 0.145 225)",
+        "tonalRamp": ["oklch(0.15 0.145 225)", "oklch(0.25 0.145 225)", "oklch(0.35 0.145 225)", "oklch(0.45 0.145 225)", "oklch(0.55 0.145 225)", "oklch(0.65 0.145 225)", "oklch(0.80 0.145 225)", "oklch(0.95 0.145 225)"]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Bright Instrument Cyan",
+        "canonical": "oklch(0.8 0.13 225)",
+        "tonalRamp": ["oklch(0.15 0.13 225)", "oklch(0.25 0.13 225)", "oklch(0.35 0.13 225)", "oklch(0.45 0.13 225)", "oklch(0.55 0.13 225)", "oklch(0.65 0.13 225)", "oklch(0.80 0.13 225)", "oklch(0.95 0.13 225)"]
+      },
+      "accent-ink": {
+        "role": "neutral",
+        "displayName": "Cyan Ink",
+        "canonical": "oklch(0.2 0.035 245)",
+        "tonalRamp": ["oklch(0.15 0.035 245)", "oklch(0.25 0.035 245)", "oklch(0.35 0.035 245)", "oklch(0.45 0.035 245)", "oklch(0.55 0.035 245)", "oklch(0.65 0.035 245)", "oklch(0.80 0.035 245)", "oklch(0.95 0.035 245)"]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Verified Green",
+        "canonical": "oklch(0.77 0.15 155)",
+        "tonalRamp": ["oklch(0.15 0.15 155)", "oklch(0.25 0.15 155)", "oklch(0.35 0.15 155)", "oklch(0.45 0.15 155)", "oklch(0.55 0.15 155)", "oklch(0.65 0.15 155)", "oklch(0.80 0.15 155)", "oklch(0.95 0.15 155)"]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Diagnostic Amber",
+        "canonical": "oklch(0.82 0.15 82)",
+        "tonalRamp": ["oklch(0.15 0.15 82)", "oklch(0.25 0.15 82)", "oklch(0.35 0.15 82)", "oklch(0.45 0.15 82)", "oklch(0.55 0.15 82)", "oklch(0.65 0.15 82)", "oklch(0.80 0.15 82)", "oklch(0.95 0.15 82)"]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Fault Red",
+        "canonical": "oklch(0.69 0.19 24)",
+        "tonalRamp": ["oklch(0.15 0.19 24)", "oklch(0.25 0.19 24)", "oklch(0.35 0.19 24)", "oklch(0.45 0.19 24)", "oklch(0.55 0.19 24)", "oklch(0.65 0.19 24)", "oklch(0.80 0.19 24)", "oklch(0.95 0.19 24)"]
+      },
+      "danger-hover": {
+        "role": "tertiary",
+        "displayName": "Bright Fault Red",
+        "canonical": "oklch(0.75 0.17 24)",
+        "tonalRamp": ["oklch(0.15 0.17 24)", "oklch(0.25 0.17 24)", "oklch(0.35 0.17 24)", "oklch(0.45 0.17 24)", "oklch(0.55 0.17 24)", "oklch(0.65 0.17 24)", "oklch(0.80 0.17 24)", "oklch(0.95 0.17 24)"]
+      },
+      "focus": {
+        "role": "tertiary",
+        "displayName": "Focus Yellow",
+        "canonical": "oklch(0.84 0.16 95)",
+        "tonalRamp": ["oklch(0.15 0.16 95)", "oklch(0.25 0.16 95)", "oklch(0.35 0.16 95)", "oklch(0.45 0.16 95)", "oklch(0.55 0.16 95)", "oklch(0.65 0.16 95)", "oklch(0.80 0.16 95)", "oklch(0.95 0.16 95)"]
+      }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Tên sản phẩm, panel và modal." },
+      "body": { "displayName": "Body", "purpose": "Mô tả trạng thái và nội dung bảng." },
+      "label": { "displayName": "Label", "purpose": "Điều khiển, trạng thái và heading nhỏ." }
+    },
+    "shadows": [
+      { "name": "raised-ambient", "value": "0 0.75rem 2.5rem oklch(0.08 0.02 255 / 0.45)", "purpose": "Modal, notice và nút nổi trên bản đồ." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Phản hồi hover, focus và modal trong 180 ms." },
+      { "name": "marker-pulse", "value": "1.8s", "purpose": "Chỉ marker vị trí hiện tại; tắt khi reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "wide", "value": "75rem" },
+      { "name": "stacked", "value": "58rem" },
+      { "name": "mobile", "value": "40rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Hành động chính trong một cụm điều khiển.",
+      "html": "<button class=\"ds-btn-primary\">Làm mới</button>",
+      "css": ".ds-btn-primary { min-height: 2.5rem; padding: .5rem .85rem; border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--accent); color: var(--accent-ink); font: 750 .84rem/1.1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; cursor: pointer; transition: background-color 180ms var(--ease-out); } .ds-btn-primary:hover { background: var(--accent-hover); } .ds-btn-primary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Hành động phụ hoặc điều khiển playback.",
+      "html": "<button class=\"ds-btn-secondary\">Phát</button>",
+      "css": ".ds-btn-secondary { min-height: 2.5rem; padding: .5rem .85rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg-raised); color: var(--text-primary); font: 750 .84rem/1.1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; cursor: pointer; transition: border-color 180ms var(--ease-out), color 180ms var(--ease-out); } .ds-btn-secondary:hover { border-color: var(--accent); color: var(--accent-hover); } .ds-btn-secondary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Instrument Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Trường nhập tối, rõ biên và co được trong grid mobile.",
+      "html": "<label class=\"ds-field\">Thiết bị<input class=\"ds-input\" value=\"iphone_01\"></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: .3rem; color: var(--text-secondary); font: 650 .72rem/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-input { width: 100%; min-width: 0; min-height: 2.5rem; padding: .48rem .7rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg-inset); color: var(--text-primary); font: inherit; } .ds-input:hover { border-color: var(--text-muted); } .ds-input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Trạng thái có chấm màu và nhãn chữ bắt buộc.",
+      "html": "<div class=\"ds-status\"><span class=\"ds-status-dot\"></span>WLOC thiếu tọa độ</div>",
+      "css": ".ds-status { min-height: 2.5rem; display: inline-flex; align-items: center; gap: .5rem; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-inset); color: var(--warning); font: 750 .75rem/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-status-dot { width: .55rem; height: .55rem; border-radius: 50%; background: currentColor; } .ds-status:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Data Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Container phẳng cho vị trí, lộ trình và cài đặt.",
+      "html": "<section class=\"ds-panel\"><span class=\"ds-eyebrow\">Thiết bị đang chọn</span><h2>Vị trí mới nhất</h2><p>Chưa có tọa độ hợp lệ.</p></section>",
+      "css": ".ds-panel { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-panel h2 { margin: .18rem 0 .7rem; font-size: 1rem; line-height: 1.25; } .ds-panel p { margin: 0; color: var(--text-secondary); font-size: .8rem; } .ds-eyebrow { color: var(--text-muted); font-size: .68rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; } .ds-panel:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Tab Navigation",
+      "kind": "nav",
+      "description": "Hai chế độ Bản đồ và Dữ liệu, chia đều trên mobile.",
+      "html": "<nav class=\"ds-tabs\"><button class=\"ds-tab ds-tab-active\">Bản đồ</button><button class=\"ds-tab\">Dữ liệu</button></nav>",
+      "css": ".ds-tabs { display: flex; gap: .25rem; padding: .25rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-inset); } .ds-tab { min-height: 2.5rem; flex: 1; padding: .5rem .95rem; border: 0; border-radius: .55rem; background: transparent; color: var(--text-secondary); font: 700 .84rem/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-tab:hover { background: var(--bg-raised); color: var(--text-primary); } .ds-tab-active { background: var(--accent); color: var(--accent-ink); } .ds-tab:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Bảng điều khiển máy đo tĩnh",
+    "overview": "“Bảng điều khiển máy đo tĩnh” xem giao diện như một dụng cụ kỹ thuật kín đáo: dữ liệu, thời gian và sai số luôn nổi bật hơn trang trí. Bố cục dùng bề mặt tối phân tầng nhẹ, một accent cyan có kiểm soát và ngôn ngữ trạng thái trực tiếp để tạo cảm giác tin cậy, chính xác, bình tĩnh.\n\nHệ thống tuyệt đối không mang vẻ hacker trang trí, không dùng glassmorphism dày đặc, gradient phô trương hoặc trạng thái xanh giả tạo. Desktop giữ bản đồ và thông tin song song; mobile đặt bản đồ trước, vùng chạm tối thiểu 44 px và không được tràn ngang.",
+    "keyCharacteristics": [
+      "Tối, kín đáo và có độ tương phản cao.",
+      "Cyan dành cho hành động và dữ liệu vị trí, không phủ tràn màn hình.",
+      "Trạng thái luôn có cả màu, nhãn chữ và hướng xử lý.",
+      "Phân tầng bằng sắc độ và đường viền mảnh trước khi dùng bóng đổ."
+    ],
+    "rules": [
+      { "name": "The Honest Signal Rule", "body": "Xanh lá bị cấm nếu hệ thống chỉ nhận tín hiệu nhưng chưa có tọa độ hợp lệ; trường hợp đó luôn dùng vàng kèm lời giải thích.", "section": "colors" },
+      { "name": "The Cyan Budget Rule", "body": "Cyan chỉ xuất hiện ở hành động chính, tab được chọn và dữ liệu vị trí; độ hiếm tạo ra thứ bậc.", "section": "colors" },
+      { "name": "The Data First Rule", "body": "Vị trí, thời gian và độ chính xác luôn có trọng lượng hoặc độ tương phản cao hơn nhãn mô tả của chúng.", "section": "typography" },
+      { "name": "The Flat by Default Rule", "body": "Panel ở trạng thái nghỉ dùng sắc độ và border; nếu mọi card đều có bóng, phân tầng đã thất bại.", "section": "elevation" }
+    ],
+    "dos": [
+      "**Do** giữ trạng thái trung thực: tín hiệu không có tọa độ phải dùng Diagnostic Amber và nhãn “WLOC thiếu tọa độ”.",
+      "**Do** giữ vùng chạm tối thiểu 44 px, focus 3 px và hỗ trợ `prefers-reduced-motion`.",
+      "**Do** đặt bản đồ trước sidebar ở màn hình hẹp và bảo đảm `scrollWidth` không vượt viewport.",
+      "**Do** dùng border 1 px và tonal layering để phân nhóm dữ liệu."
+    ],
+    "donts": [
+      "**Don't** dùng “giao diện hacker trang trí”.",
+      "**Don't** dùng “glassmorphism dày đặc”.",
+      "**Don't** dùng “gradient phô trương”.",
+      "**Don't** dùng “trạng thái xanh giả tạo” khi chưa có tọa độ hợp lệ.",
+      "**Don't** biến dashboard thành “một lưới card giống nhau”.",
+      "**Don't** ưu tiên thẩm mỹ hơn khả năng đọc dữ liệu."
+    ]
+  }
+}

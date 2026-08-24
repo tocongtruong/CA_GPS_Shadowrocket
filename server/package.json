@@ -5,13 +5,14 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "rotate-secrets": "node scripts/rotate-secrets.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "node-cron": "^3.0.3",
+    "node-cron": "^4.6.0",
     "telegraf": "^4.16.3"
   }
 }
